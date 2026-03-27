@@ -7,7 +7,8 @@ public struct AuthSwitchCommand: ParsableCommand {
         abstract: "Switch the current active account."
     )
 
-    @Argument(help: "Account name to switch to.")
+    @Argument(help: "Account name to switch to.",
+              completion: .custom { _, _, _ in AccountManager.savedAccountNames() })
     var name: String
 
     public init() {}

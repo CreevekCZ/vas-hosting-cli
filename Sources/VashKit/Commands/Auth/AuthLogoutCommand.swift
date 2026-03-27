@@ -7,7 +7,8 @@ public struct AuthLogoutCommand: ParsableCommand {
         abstract: "Remove an account and its stored API key."
     )
 
-    @Argument(help: "Account name to remove.")
+    @Argument(help: "Account name to remove.",
+              completion: .custom { _, _, _ in AccountManager.savedAccountNames() })
     var name: String
 
     public init() {}

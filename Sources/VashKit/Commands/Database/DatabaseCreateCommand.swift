@@ -14,8 +14,8 @@ public struct DatabaseCreateCommand: AsyncParsableCommand {
     @Option(name: .long, help: "Database name.")
     var name: String
 
-    @Option(name: .long, help: "Database type: mysql or postgresql.")
-    var type: String
+    @Option(name: .long, help: "Database type.")
+    var type: DatabaseType
 
     @Option(name: .long, help: "Database password (8-64 characters).")
     var password: String
@@ -31,15 +31,12 @@ public struct DatabaseCreateCommand: AsyncParsableCommand {
     public init() {}
 
     public func run() async throws {
-        guard let dbType = Components.Schemas.CreateDatabaseRequest._typePayload(rawValue: type) else {
-            throw VashError.apiError("Invalid database type '\(type)'. Use 'mysql' or 'postgresql'.")
-        }
         let client = try clientOptions.makeClient()
         let response = try await client.createDatabase(
             path: .init(domain: domain),
             body: .json(.init(
                 name: name,
-                _type: dbType,
+                _type: Components.Schemas.CreateDatabaseRequest._typePayload(rawValue: type.rawValue)!,
                 password: password,
                 encoding: encoding,
                 note: note

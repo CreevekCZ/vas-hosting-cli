@@ -98,6 +98,18 @@ public final class AccountManager: @unchecked Sendable {
         return key
     }
 
+    // MARK: - Shell Completion Support
+
+    /// Returns all saved account names synchronously — used by shell completion callbacks.
+    public static func savedAccountNames() -> [String] {
+        let configURL = defaultDirectory().appendingPathComponent("config.json")
+        guard
+            let data = try? Data(contentsOf: configURL),
+            let config = try? JSONDecoder().decode(AccountConfig.self, from: data)
+        else { return [] }
+        return config.accounts.map(\.name)
+    }
+
     // MARK: - Private
 
     private static func defaultDirectory() -> URL {

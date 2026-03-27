@@ -20,7 +20,8 @@ public struct DNSEditCommand: AsyncParsableCommand {
     @Option(name: .long, help: "Record content/value.")
     var content: String
 
-    @Option(name: .long, help: "Record type (A, CNAME, MX, TXT, etc.).")
+    @Option(name: .long, help: "Record type (A, CNAME, MX, TXT, etc.).",
+            completion: .list(["A", "AAAA", "CNAME", "MX", "TXT", "NS", "SRV", "CAA", "PTR", "SOA"]))
     var type: String
 
     @Option(name: .long, help: "TTL in seconds (60-86400).")

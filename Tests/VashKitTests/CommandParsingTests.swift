@@ -97,7 +97,7 @@ final class CommandParsingTests: XCTestCase {
         ])
         XCTAssertEqual(cmd.domain, "example.com")
         XCTAssertEqual(cmd.name, "mydb")
-        XCTAssertEqual(cmd.type, "mysql")
+        XCTAssertEqual(cmd.type, .mysql)
         XCTAssertEqual(cmd.password, "secret123")
         XCTAssertNil(cmd.encoding)
         XCTAssertNil(cmd.note)

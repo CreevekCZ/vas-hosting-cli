@@ -5,7 +5,8 @@ import OpenAPIURLSession
 
 /// Shared options available on every command that calls the API.
 public struct ClientOptions: ParsableArguments {
-    @Option(name: .long, help: "Account name to use (overrides current account).")
+    @Option(name: .long, help: "Account name to use (overrides current account).",
+            completion: .custom { _, _, _ in AccountManager.savedAccountNames() })
     public var account: String?
 
     @Option(name: .long, help: "Output format: table or json.")

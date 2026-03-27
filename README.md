@@ -4,10 +4,12 @@
 
 Manage your hosting account from the terminal — servers, domains, databases, DNS records, email accounts, FTP accounts, and more. Supports multiple named accounts, JSON output for scripting, and runs on macOS and Linux.
 
-[![CI](https://github.com/jankoznarek/vas-hosting-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/jankoznarek/vas-hosting-cli/actions/workflows/ci.yml)
+[![CI](https://github.com/CreevekCZ/vas-hosting-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/CreevekCZ/vas-hosting-cli/actions/workflows/ci.yml)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey)
 ![Swift](https://img.shields.io/badge/swift-5.9%2B-orange)
 ![License](https://img.shields.io/badge/license-MIT-blue)
+
+> Czech version: [README.cs.md](README.cs.md)
 
 ---
 
@@ -16,16 +18,18 @@ Manage your hosting account from the terminal — servers, domains, databases, D
 ### Homebrew (recommended)
 
 ```sh
-brew tap jankoznarek/tap
+brew tap CreevekCZ/tap
 brew install vash
 ```
+
+Shell completions (zsh, bash, fish) are installed automatically.
 
 ### Build from source
 
 Requires Swift 5.9+ (Xcode 15+ on macOS, or the [Swift toolchain](https://www.swift.org/download/) on Linux).
 
 ```sh
-git clone https://github.com/jankoznarek/vas-hosting-cli.git
+git clone https://github.com/CreevekCZ/vas-hosting-cli.git
 cd vas-hosting-cli
 swift build -c release
 sudo cp .build/release/vash /usr/local/bin/vash
@@ -97,7 +101,7 @@ vash auth current
 
 ```sh
 vash account invoices                              # list unpaid invoices
-vash account pay-invoice --invoice-id <id>         # pay an invoice
+vash account pay-invoice <variableSymbol>          # pay an invoice with credit
 ```
 
 ### domain
@@ -111,18 +115,18 @@ vash domain change-php <domain> --version <ver>    # change PHP version
 
 ```sh
 vash database list <domain>
-vash database create <domain> --name <db> --type mysql|postgresql --password <pass>
-vash database change-password <domain> --name <db> --password <pass>
-vash database backup <domain> --name <db>
-vash database delete <domain> --name <db>
+vash database create <domain> --name <db> --type mysql|postgresql --password <pass> [--encoding <enc>] [--note <note>]
+vash database change-password <domain> <database> --password <pass>
+vash database backup <domain> <database>
+vash database delete <domain> <database>
 ```
 
 ### dns
 
 ```sh
 vash dns list <domain>
-vash dns create <domain> --name <record> --type A|CNAME|MX|TXT|... --content <val> --ttl <secs>
-vash dns edit <domain> <record-id> --content <val> --ttl <secs>
+vash dns create <domain> --name <record> --type A|AAAA|CNAME|MX|TXT|NS|SRV|CAA --content <val> --ttl <secs> [--priority <n>]
+vash dns edit <domain> <record-id> --name <record> --type <type> --content <val> --ttl <secs>
 vash dns delete <domain> <record-id>
 ```
 
@@ -130,36 +134,36 @@ vash dns delete <domain> <record-id>
 
 ```sh
 vash email list <domain>
-vash email create <domain> --name <user> --display-name <name> --password <pass>
-vash email change-password <domain> --name <user> --password <pass>
-vash email change-quota <domain> --name <user> --quota <mb>
-vash email create-alias <domain> --name <user> --alias <alias>
-vash email delete-alias <domain> --name <user> --alias <alias>
-vash email auto-reply <domain> --name <user> --message <msg> --enable|--disable
-vash email forwarding <domain> --name <user> --forward-to <addr>
-vash email delete <domain> --name <user>
+vash email create <domain> --name <user> --display-name <name> --password <pass> [--quota <mb>]
+vash email change-password <domain> <email> --password <pass>
+vash email change-quota <domain> <email> --quota <mb>
+vash email create-alias <domain> <email> --alias <alias>
+vash email delete-alias <domain> <email> --alias <alias>
+vash email auto-reply <domain> <email> --enabled true|false [--subject <s>] [--message <m>]
+vash email forwarding <domain> <email> --forward-to <addr>
+vash email delete <domain> <email>
 ```
 
 ### ftp
 
 ```sh
 vash ftp list <domain>
-vash ftp create <domain> --name <user> --password <pass>
-vash ftp change-password <domain> --name <user> --password <pass>
-vash ftp change-quota <domain> --name <user> --quota <mb>
-vash ftp lock <domain> --name <user>
-vash ftp unlock <domain> --name <user>
-vash ftp delete <domain> --name <user>
+vash ftp create <domain> --name <user> --directory <dir> --password <pass> [--quota <mb>]
+vash ftp change-password <domain> <ftp> --password <pass>
+vash ftp change-quota <domain> <ftp> --quota <mb>
+vash ftp lock <domain> <ftp>
+vash ftp unlock <domain> <ftp>
+vash ftp delete <domain> <ftp>
 ```
 
 ### server
 
 ```sh
-vash server list
+vash server list [--labels <label1,label2>]
 vash server info <hostname>
 vash server reboot <hostname>
 vash server list-vds
-vash server install-vps <hostname> --os <key> --vds <vds-hostname>
+vash server install-vps <hostname> --cpu <mhz> --ram <gib> --storage-size <gb> --storage-location <slot> --os <id> [--server-name <n>] [--ip-address <ip>]
 vash server assign-label <hostname> --label <label>
 vash server unassign-label <hostname> --label <label>
 ```
@@ -168,15 +172,15 @@ vash server unassign-label <hostname> --label <label>
 
 ```sh
 vash server-label list
-vash server-label create --name <label> --color <hex>
-vash server-label edit --name <label> --color <hex>
-vash server-label delete --name <label>
+vash server-label create --name <label> [--color <hex>]
+vash server-label edit <name> --new-name <n> [--color <hex>]
+vash server-label delete <name>
 ```
 
 ### infrastructure
 
 ```sh
-vash infrastructure list-os      # available operating systems
+vash infrastructure list-os      # available operating systems (use ID with install-vps --os)
 vash infrastructure list-ips     # available IP addresses
 ```
 
@@ -197,12 +201,27 @@ vash database create example.com --name myapp --type mysql --password secretpass
 # Check unpaid invoices on a secondary account
 vash account invoices --account work
 
-# List email accounts
-vash email list example.com
-
 # Reboot a server
 vash server reboot srv01.example.com
 ```
+
+---
+
+## Using vash with AI agents
+
+The [`agents/`](agents/) directory contains skill files that teach AI coding assistants how to use `vash`. Install the skill for your agent and it will understand every command, flag, and workflow without you having to explain them.
+
+### Claude Code
+
+```sh
+mkdir -p .claude/commands
+curl -o .claude/commands/vash.md \
+  https://raw.githubusercontent.com/CreevekCZ/vas-hosting-cli/main/agents/claude-code/vash.md
+```
+
+Then type `/vash` in Claude Code to activate the skill. Claude will know the full command reference and can generate, explain, or run `vash` commands on your behalf.
+
+More agents (Cursor, Codex, etc.) will be added to the [`agents/`](agents/) directory over time.
 
 ---
 
@@ -212,8 +231,8 @@ API keys are stored securely — never in plain text.
 
 | Platform | Storage |
 |----------|---------|
-| macOS | macOS Keychain (`cz.vas-hosting.cli`) |
-| Linux | AES-256-GCM encrypted file at `~/.vash/credentials.enc`, key derived from machine ID |
+| macOS | macOS Keychain |
+| Linux / WSL | AES-256-GCM encrypted file at `~/.vash/credentials.enc` |
 
 Account configuration is stored in `~/.vash/config.json`.
 
@@ -222,13 +241,16 @@ Account configuration is stored in `~/.vash/config.json`.
 ## Development
 
 ```sh
-swift build           # debug build
-swift build -c release  # release build
-swift test            # run all 63 tests
-swiftlint lint --strict Sources/ Tests/  # lint
+make build    # debug build
+make release  # release build
+make test     # run all tests
+make lint     # SwiftLint strict
+make format   # SwiftFormat
+make generate # regenerate API client from openapi.yaml
+make install  # build release + install to /usr/local/bin/vash
 ```
 
-The API client is auto-generated at build time from `openapi.yaml` using [swift-openapi-generator](https://github.com/apple/swift-openapi-generator). To update the client, edit `openapi.yaml` and rebuild — no manual model code needed.
+The API client is auto-generated at build time from `openapi.yaml` using [swift-openapi-generator](https://github.com/apple/swift-openapi-generator). To update the client, edit `openapi.yaml` and run `make generate`.
 
 ---
 

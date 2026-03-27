@@ -26,7 +26,7 @@ Task {
             || args.contains("--format=json")
         let format: OutputFormat = isJSON ? .json : .table
         OutputFormatter.printError(error, format: format)
-        Darwin.exit(exitCode.rawValue)
+        exit(exitCode.rawValue)
     }
     sema.signal()
 }

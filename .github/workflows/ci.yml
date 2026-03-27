@@ -1,0 +1,151 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-openapi:
+    name: Validate OpenAPI spec
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate openapi.yaml
+        run: npx --yes @redocly/cli@latest lint openapi.yaml
+
+  swiftlint:
+    name: SwiftLint
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SwiftLint
+        run: brew install swiftlint
+      - name: Lint
+        run: swiftlint lint --strict
+
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-15, ubuntu-24.04]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode (macOS)
+        if: runner.os == 'macOS'
+        run: sudo xcode-select -s "$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)"
+
+      - name: Install Swift (Ubuntu)
+        if: runner.os == 'Linux'
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: '6.0'
+
+      - name: Cache Swift packages
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: ${{ runner.os }}-spm-${{ hashFiles('Package.resolved') }}
+          restore-keys: ${{ runner.os }}-spm-
+
+      - name: Build
+        run: swift build -c release
+
+      - name: Test
+        run: swift test
+
+  release:
+    name: Release (${{ matrix.platform }})
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: macos-15
+            platform: macos-arm64
+            triple: arm64-apple-macosx
+          - os: macos-15
+            platform: macos-x86_64
+            triple: x86_64-apple-macosx
+          - os: ubuntu-24.04
+            platform: linux-x86_64
+            triple: x86_64-unknown-linux-gnu
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode (macOS)
+        if: runner.os == 'macOS'
+        run: sudo xcode-select -s "$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)"
+
+      - name: Install Swift (Ubuntu)
+        if: runner.os == 'Linux'
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: '6.0'
+
+      - name: Build release binary
+        run: |
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            swift build -c release --arch ${{ matrix.triple == 'arm64-apple-macosx' && 'arm64' || 'x86_64' }}
+            BINARY=".build/${{ matrix.triple == 'arm64-apple-macosx' && 'arm64' || 'x86_64' }}-apple-macosx/release/vash"
+          else
+            swift build -c release
+            BINARY=".build/release/vash"
+          fi
+          mkdir -p dist
+          cp "$BINARY" dist/vash
+          cd dist && tar czf vash-${{ github.ref_name }}-${{ matrix.platform }}.tar.gz vash
+          sha256sum vash-${{ github.ref_name }}-${{ matrix.platform }}.tar.gz > vash-${{ github.ref_name }}-${{ matrix.platform }}.tar.gz.sha256
+
+      - name: Upload release artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/vash-${{ github.ref_name }}-${{ matrix.platform }}.tar.gz
+            dist/vash-${{ github.ref_name }}-${{ matrix.platform }}.tar.gz.sha256
+
+  update-formula:
+    name: Update Homebrew Formula
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: release
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Download SHA256 files from release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "${{ github.ref_name }}" \
+            --repo ${{ github.repository }} \
+            --pattern "*.sha256" \
+            --dir ./sums
+
+      - name: Update formula with real SHA256 values
+        run: |
+          VERSION=${{ github.ref_name }}
+          VERSION_NUM=${VERSION#v}
+          ARM64_SHA=$(cut -d' ' -f1 ./sums/vash-${VERSION}-macos-arm64.tar.gz.sha256)
+          X86_SHA=$(cut -d' ' -f1 ./sums/vash-${VERSION}-macos-x86_64.tar.gz.sha256)
+          LINUX_SHA=$(cut -d' ' -f1 ./sums/vash-${VERSION}-linux-x86_64.tar.gz.sha256)
+          sed -i \
+            -e "s/version \".*\"/version \"${VERSION_NUM}\"/" \
+            -e "s/REPLACE_WITH_ARM64_SHA256/${ARM64_SHA}/" \
+            -e "s/REPLACE_WITH_X86_64_SHA256/${X86_SHA}/" \
+            -e "s/REPLACE_WITH_LINUX_SHA256/${LINUX_SHA}/" \
+            Formula/vash.rb
+
+      - name: Commit and push updated formula
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/vash.rb
+          git commit -m "chore: update formula for ${{ github.ref_name }}"
+          git push

@@ -1,0 +1,1717 @@
+openapi: 3.0.0
+info:
+  title: Vas-Hosting API
+  description: >-
+    API for managing vas-hosting.cz hosting services including servers, domains,
+    databases, DNS records, email accounts, and FTP accounts.
+  version: 1.0.0
+servers:
+  - url: https://portal.vas-hosting.cz/api/v1
+    description: Vas-Hosting API
+components:
+  securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+
+    # --- Account ---
+    Invoice:
+      type: object
+      properties:
+        totalPrice:
+          type: string
+        createdAt:
+          type: string
+        expiresAt:
+          type: string
+      required:
+        - totalPrice
+        - createdAt
+        - expiresAt
+    UnpaidInvoicesResponse:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/Invoice'
+
+    # --- Domain ---
+    StorageMetrics:
+      type: object
+      properties:
+        size:
+          type: integer
+        used:
+          type: integer
+        free:
+          type: integer
+      required:
+        - size
+        - used
+        - free
+    DomainStorage:
+      type: object
+      properties:
+        primary:
+          $ref: '#/components/schemas/StorageMetrics'
+        secondary:
+          $ref: '#/components/schemas/StorageMetrics'
+    VpsCount:
+      type: object
+      properties:
+        limit:
+          type: integer
+        used:
+          type: integer
+        free:
+          type: integer
+      required:
+        - limit
+        - used
+        - free
+    DomainInfo:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        expiration:
+          type: string
+        tariff:
+          type: string
+        storage:
+          $ref: '#/components/schemas/DomainStorage'
+        vpsCount:
+          $ref: '#/components/schemas/VpsCount'
+      required:
+        - id
+        - name
+
+    # --- Database ---
+    Database:
+      type: object
+      properties:
+        user:
+          type: string
+        type:
+          type: string
+          enum: [mysql, postgresql]
+        size:
+          type: integer
+      required:
+        - user
+        - type
+        - size
+    DatabasesResponse:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/Database'
+    CreateDatabaseRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [mysql, postgresql]
+        password:
+          type: string
+          minLength: 8
+          maxLength: 64
+        encoding:
+          type: string
+        note:
+          type: string
+          nullable: true
+      required:
+        - name
+        - type
+        - password
+    ChangePasswordRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          minLength: 8
+          maxLength: 64
+      required:
+        - password
+
+    # --- DNS Records ---
+    DNSRecord:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        content:
+          type: string
+        priority:
+          type: integer
+          nullable: true
+        ttl:
+          type: integer
+        note:
+          type: string
+          nullable: true
+        created:
+          type: string
+        updated:
+          type: string
+      required:
+        - name
+        - type
+        - content
+        - ttl
+    DNSRecordsResponse:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/DNSRecord'
+    CreateDNSRecordRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        content:
+          type: string
+        type:
+          type: string
+        ttl:
+          type: integer
+          minimum: 60
+          maximum: 86400
+        priority:
+          type: integer
+          minimum: 0
+          maximum: 65535
+        note:
+          type: string
+      required:
+        - name
+        - content
+        - type
+        - ttl
+
+    # --- Email Accounts ---
+    EmailAccount:
+      type: object
+      properties:
+        quota:
+          type: integer
+        isAutoReply:
+          type: boolean
+        isActive:
+          type: boolean
+      required:
+        - quota
+        - isAutoReply
+        - isActive
+    EmailAccountsResponse:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/EmailAccount'
+    CreateEmailAccountRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        displayName:
+          type: string
+        password:
+          type: string
+          minLength: 8
+          maxLength: 64
+        quota:
+          type: integer
+          minimum: 0
+          description: Quota in MB; 0 for unlimited
+      required:
+        - name
+        - displayName
+        - password
+        - quota
+    ChangeQuotaRequest:
+      type: object
+      properties:
+        quota:
+          type: integer
+          minimum: 0
+      required:
+        - quota
+    CreateEmailAliasRequest:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+        - name
+    SetupAutoReplyRequest:
+      type: object
+      properties:
+        isActive:
+          type: boolean
+        autoActiveFrom:
+          type: string
+          nullable: true
+        autoActiveTo:
+          type: string
+          nullable: true
+        subject:
+          type: string
+          nullable: true
+        content:
+          type: string
+          nullable: true
+      required:
+        - isActive
+    SetupForwardingRequest:
+      type: object
+      properties:
+        emails:
+          type: array
+          items:
+            type: string
+        deleteOriginalEmail:
+          type: boolean
+      required:
+        - emails
+        - deleteOriginalEmail
+
+    # --- FTP Accounts ---
+    FtpAccount:
+      type: object
+      properties:
+        quota:
+          type: integer
+        isActive:
+          type: boolean
+      required:
+        - quota
+        - isActive
+    FtpAccountsResponse:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/FtpAccount'
+    CreateFtpAccountRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        directory:
+          type: string
+        password:
+          type: string
+          minLength: 8
+          maxLength: 64
+        quota:
+          type: integer
+          minimum: 0
+          description: Quota in MB; 0 for unlimited
+      required:
+        - name
+        - directory
+        - password
+        - quota
+    ChangeFtpQuotaRequest:
+      type: object
+      properties:
+        quota:
+          type: integer
+          minimum: 0
+      required:
+        - quota
+
+    # --- Servers ---
+    ServerStorage:
+      type: object
+      properties:
+        primary:
+          type: integer
+          description: Primary storage in bytes
+    Server:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        displayName:
+          type: string
+        dedicatedServerName:
+          type: string
+        expiration:
+          type: string
+        tariff:
+          type: string
+        operatingSystem:
+          type: string
+        storage:
+          $ref: '#/components/schemas/ServerStorage'
+        ram:
+          type: integer
+          description: RAM in bytes
+        status:
+          type: string
+        labels:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - name
+        - expiration
+        - tariff
+        - status
+    ServersResponse:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/Server'
+    IPv4Info:
+      type: object
+      properties:
+        reverse:
+          type: string
+        changedAt:
+          type: string
+    ServerAddresses:
+      type: object
+      properties:
+        ipv4:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/IPv4Info'
+        ipv6:
+          type: array
+          items: {}
+    ServerDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        expiration:
+          type: string
+        tariff:
+          type: string
+        operatingSystem:
+          type: string
+        storage:
+          $ref: '#/components/schemas/ServerStorage'
+        ram:
+          type: integer
+          description: RAM in bytes
+        status:
+          type: string
+        addresses:
+          $ref: '#/components/schemas/ServerAddresses'
+      required:
+        - id
+        - status
+    VdsStorage:
+      type: object
+      properties:
+        primary:
+          $ref: '#/components/schemas/StorageMetrics'
+        secondary:
+          $ref: '#/components/schemas/StorageMetrics'
+    VdsDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        vpsCount:
+          $ref: '#/components/schemas/VpsCount'
+        storage:
+          $ref: '#/components/schemas/VdsStorage'
+      required:
+        - id
+        - name
+    VdsResponse:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/VdsDetail'
+    AssignLabelRequest:
+      type: object
+      properties:
+        label:
+          type: string
+      required:
+        - label
+    UnassignLabelRequest:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+        - name
+    InstallVpsRequest:
+      type: object
+      properties:
+        cpu:
+          type: integer
+          description: CPU frequency in MHz (greater than 3)
+        ram:
+          type: integer
+          description: RAM in GiB (greater than or equal to 2)
+        primaryStorageSize:
+          type: integer
+          description: Primary storage size in GB
+        primaryStorageLocation:
+          type: integer
+          description: Disk slot number on VDS
+        operatingSystem:
+          type: string
+          description: OS identifier from /api/v1/servers/operating-systems
+        serverName:
+          type: string
+        ipAddress:
+          type: string
+      required:
+        - cpu
+        - ram
+        - primaryStorageSize
+        - primaryStorageLocation
+        - operatingSystem
+
+    # --- Server Labels ---
+    ServerLabel:
+      type: object
+      properties:
+        color:
+          type: string
+      required:
+        - color
+    ServerLabelsResponse:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/ServerLabel'
+    CreateServerLabelRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          pattern: '^\S+$'
+          description: Label name (no whitespace)
+        color:
+          type: string
+          description: Hex color string
+      required:
+        - name
+    EditServerLabelRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          pattern: '^\S+$'
+          description: New label name (no whitespace)
+        color:
+          type: string
+          description: New hex color string
+      required:
+        - name
+
+    # --- Infrastructure ---
+    OperatingSystem:
+      type: object
+      properties:
+        name:
+          type: string
+        distribution:
+          type: string
+      required:
+        - name
+        - distribution
+    OperatingSystemsResponse:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/OperatingSystem'
+    IpAddressInfo:
+      type: object
+      properties:
+        reverse:
+          type: string
+        availableForServerInstall:
+          type: boolean
+        changedAt:
+          type: string
+    IpAddressesResponse:
+      type: object
+      properties:
+        ipv4:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/IpAddressInfo'
+        ipv6:
+          type: array
+          items: {}
+
+    # --- PHP Version ---
+    ChangePhpVersionRequest:
+      type: object
+      properties:
+        version:
+          type: string
+      required:
+        - version
+
+security:
+  - apiKeyAuth: []
+
+paths:
+  # ==================== ACCOUNT ====================
+  /account/unpaid-invoices:
+    get:
+      operationId: listUnpaidInvoices
+      summary: List unpaid invoices
+      tags: [Account]
+      responses:
+        '200':
+          description: List of unpaid invoices keyed by variable symbol
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnpaidInvoicesResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /account/unpaid-invoices/{variableSymbol}/pay-with-credit:
+    post:
+      operationId: payInvoiceWithCredit
+      summary: Pay unpaid invoice with credit
+      tags: [Account]
+      parameters:
+        - name: variableSymbol
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Invoice paid successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Invoice not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ==================== DOMAINS ====================
+  /domains/{domain}:
+    get:
+      operationId: getDomainInfo
+      summary: Get domain info
+      tags: [Domains]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Domain information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DomainInfo'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Domain not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /domains/{domain}/change-php-version:
+    post:
+      operationId: changeDomainPhpVersion
+      summary: Change PHP version for a domain
+      tags: [Domains]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePhpVersionRequest'
+      responses:
+        '204':
+          description: PHP version changed successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Invalid PHP version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ==================== DATABASES ====================
+  /domains/{domain}/databases:
+    get:
+      operationId: listDatabases
+      summary: List databases for a domain
+      tags: [Databases]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Databases keyed by database name
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabasesResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      operationId: createDatabase
+      summary: Create a database
+      tags: [Databases]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDatabaseRequest'
+      responses:
+        '204':
+          description: Database created successfully
+        '409':
+          description: Database name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /domains/{domain}/databases/{database}/change-password:
+    post:
+      operationId: changeDatabasePassword
+      summary: Change database user password
+      tags: [Databases]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: database
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '204':
+          description: Password changed successfully
+        '422':
+          description: Invalid password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /domains/{domain}/databases/{database}/backup:
+    post:
+      operationId: backupDatabase
+      summary: Trigger a database backup
+      tags: [Databases]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: database
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Backup triggered successfully
+        '404':
+          description: Database not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /domains/{domain}/databases/{database}:
+    delete:
+      operationId: deleteDatabase
+      summary: Delete a database
+      tags: [Databases]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: database
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Database deleted successfully
+        '404':
+          description: Database not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ==================== DNS RECORDS ====================
+  /domains/{domain}/dns-records:
+    get:
+      operationId: listDnsRecords
+      summary: List DNS records for a domain
+      tags: [DNS Records]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: DNS records keyed by record ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DNSRecordsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      operationId: createDnsRecord
+      summary: Create a DNS record
+      tags: [DNS Records]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDNSRecordRequest'
+      responses:
+        '204':
+          description: DNS record created successfully
+        '409':
+          description: Record already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /domains/{domain}/dns-records/{dnsRecordId}:
+    post:
+      operationId: editDnsRecord
+      summary: Edit a DNS record
+      tags: [DNS Records]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: dnsRecordId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDNSRecordRequest'
+      responses:
+        '204':
+          description: DNS record updated successfully
+        '404':
+          description: Record not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      operationId: deleteDnsRecord
+      summary: Delete a DNS record
+      tags: [DNS Records]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: dnsRecordId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: DNS record deleted successfully
+        '404':
+          description: Record not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ==================== EMAIL ACCOUNTS ====================
+  /domains/{domain}/email-accounts:
+    get:
+      operationId: listEmailAccounts
+      summary: List email accounts for a domain
+      tags: [Email Accounts]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Email accounts keyed by account name
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailAccountsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      operationId: createEmailAccount
+      summary: Create an email account
+      tags: [Email Accounts]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEmailAccountRequest'
+      responses:
+        '204':
+          description: Email account created successfully
+        '409':
+          description: Account already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /domains/{domain}/email-accounts/{email}/change-password:
+    post:
+      operationId: changeEmailPassword
+      summary: Change email account password
+      tags: [Email Accounts]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '204':
+          description: Password changed successfully
+        '422':
+          description: Invalid password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /domains/{domain}/email-accounts/{email}/change-quota:
+    post:
+      operationId: changeEmailQuota
+      summary: Change email account quota
+      tags: [Email Accounts]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeQuotaRequest'
+      responses:
+        '204':
+          description: Quota changed successfully
+        '422':
+          description: Invalid quota
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /domains/{domain}/email-accounts/{email}/alias:
+    post:
+      operationId: createEmailAlias
+      summary: Create an email alias
+      tags: [Email Accounts]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEmailAliasRequest'
+      responses:
+        '204':
+          description: Alias created successfully
+        '422':
+          description: Invalid alias name
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /domains/{domain}/email-accounts/{email}/alias/{alias}:
+    delete:
+      operationId: deleteEmailAlias
+      summary: Delete an email alias
+      tags: [Email Accounts]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: alias
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Alias deleted successfully
+        '404':
+          description: Alias not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /domains/{domain}/email-accounts/{email}/setup-auto-reply:
+    post:
+      operationId: setupEmailAutoReply
+      summary: Setup auto-reply for email account
+      tags: [Email Accounts]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetupAutoReplyRequest'
+      responses:
+        '204':
+          description: Auto-reply configured successfully
+
+  /domains/{domain}/email-accounts/{email}/setup-forwarding:
+    post:
+      operationId: setupEmailForwarding
+      summary: Setup email forwarding
+      tags: [Email Accounts]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetupForwardingRequest'
+      responses:
+        '204':
+          description: Forwarding configured successfully
+
+  /domains/{domain}/email-accounts/{email}:
+    delete:
+      operationId: deleteEmailAccount
+      summary: Delete an email account
+      tags: [Email Accounts]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Email account deleted successfully
+        '404':
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ==================== FTP ACCOUNTS ====================
+  /domains/{domain}/ftp-accounts:
+    get:
+      operationId: listFtpAccounts
+      summary: List FTP accounts for a domain
+      tags: [FTP Accounts]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: FTP accounts keyed by account name
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FtpAccountsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      operationId: createFtpAccount
+      summary: Create an FTP account
+      tags: [FTP Accounts]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFtpAccountRequest'
+      responses:
+        '204':
+          description: FTP account created successfully
+        '409':
+          description: Account already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /domains/{domain}/ftp-accounts/{ftp}/change-password:
+    post:
+      operationId: changeFtpPassword
+      summary: Change FTP account password
+      tags: [FTP Accounts]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: ftp
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '204':
+          description: Password changed successfully
+        '422':
+          description: Invalid password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /domains/{domain}/ftp-accounts/{ftp}/change-quota:
+    post:
+      operationId: changeFtpQuota
+      summary: Change FTP account quota
+      tags: [FTP Accounts]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: ftp
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeFtpQuotaRequest'
+      responses:
+        '204':
+          description: Quota changed successfully
+        '422':
+          description: Invalid quota
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /domains/{domain}/ftp-accounts/{ftp}/lock:
+    post:
+      operationId: lockFtpAccount
+      summary: Lock an FTP account
+      tags: [FTP Accounts]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: ftp
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: FTP account locked
+        '404':
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /domains/{domain}/ftp-accounts/{ftp}/unlock:
+    post:
+      operationId: unlockFtpAccount
+      summary: Unlock an FTP account
+      tags: [FTP Accounts]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: ftp
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: FTP account unlocked
+        '404':
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /domains/{domain}/ftp-accounts/{ftp}:
+    delete:
+      operationId: deleteFtpAccount
+      summary: Delete an FTP account
+      tags: [FTP Accounts]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: ftp
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: FTP account deleted successfully
+        '404':
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ==================== SERVER LABELS ====================
+  /servers/labels:
+    get:
+      operationId: listServerLabels
+      summary: List all server labels
+      tags: [Server Labels]
+      responses:
+        '200':
+          description: Server labels keyed by label name
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerLabelsResponse'
+    post:
+      operationId: createServerLabel
+      summary: Create a server label
+      tags: [Server Labels]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateServerLabelRequest'
+      responses:
+        '204':
+          description: Label created successfully
+        '409':
+          description: Label name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Invalid label name or color
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /servers/labels/{labelName}:
+    delete:
+      operationId: deleteServerLabel
+      summary: Delete a server label
+      tags: [Server Labels]
+      parameters:
+        - name: labelName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Label deleted successfully
+        '404':
+          description: Label not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      operationId: editServerLabel
+      summary: Edit a server label
+      tags: [Server Labels]
+      parameters:
+        - name: labelName
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditServerLabelRequest'
+      responses:
+        '204':
+          description: Label updated successfully
+        '404':
+          description: Label not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Invalid label name or color
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ==================== INFRASTRUCTURE ====================
+  /servers/operating-systems:
+    get:
+      operationId: listOperatingSystems
+      summary: List supported operating systems
+      tags: [Infrastructure]
+      responses:
+        '200':
+          description: Operating systems keyed by OS identifier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperatingSystemsResponse'
+
+  /servers/ip-addresses:
+    get:
+      operationId: listIpAddresses
+      summary: List assigned IP addresses
+      tags: [Infrastructure]
+      responses:
+        '200':
+          description: IP addresses available for server installs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IpAddressesResponse'
+
+  # ==================== SERVERS ====================
+  /servers:
+    get:
+      operationId: listServers
+      summary: List all active servers
+      tags: [Servers]
+      parameters:
+        - name: labels[]
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          description: Filter by label names
+      responses:
+        '200':
+          description: Servers keyed by hostname
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServersResponse'
+
+  /servers/vds:
+    get:
+      operationId: listVds
+      summary: List all VDS
+      tags: [Servers]
+      responses:
+        '200':
+          description: VDS keyed by hostname
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VdsResponse'
+
+  /servers/{serverHostname}:
+    get:
+      operationId: getServerInfo
+      summary: Get server details
+      tags: [Servers]
+      parameters:
+        - name: serverHostname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Server details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerDetail'
+        '404':
+          description: Server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /servers/{serverHostname}/reboot:
+    post:
+      operationId: rebootServer
+      summary: Reboot a server
+      tags: [Servers]
+      parameters:
+        - name: serverHostname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Reboot initiated
+        '401':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /servers/{serverHostname}/install-vps:
+    post:
+      operationId: installVpsOnVds
+      summary: Install a VPS on a VDS
+      tags: [Servers]
+      parameters:
+        - name: serverHostname
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstallVpsRequest'
+      responses:
+        '204':
+          description: VPS installation started
+        '400':
+          description: Bad request (insufficient capacity, invalid OS, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: VDS not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /servers/{serverHostname}/assign-label:
+    post:
+      operationId: assignLabelToServer
+      summary: Assign a label to a server
+      tags: [Servers]
+      parameters:
+        - name: serverHostname
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignLabelRequest'
+      responses:
+        '204':
+          description: Label assigned
+        '304':
+          description: Label already assigned
+        '400':
+          description: Label not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /servers/{serverHostname}/unassign-label:
+    post:
+      operationId: unassignLabelFromServer
+      summary: Unassign a label from a server
+      tags: [Servers]
+      parameters:
+        - name: serverHostname
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnassignLabelRequest'
+      responses:
+        '204':
+          description: Label unassigned
+        '404':
+          description: Server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

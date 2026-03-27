@@ -1,0 +1,1331 @@
+openapi: 3.0.0
+info:
+  title: Vas-Hosting API
+  description: >-
+    Welcome to the VasHosting.cz API documentation! This API can be used for
+    manipulating with servers, domains and all services related to domains (dns,
+    emails, crons, etc.).
+
+
+    Feel free to give us some feedback and things you think our API could do.
+
+
+    ## Response formats
+
+
+    Our api communicates only via JSON, we receive **JSON** body via the
+    **POST** requests, and we provide back usually empty **204** response or
+    response code **200** with **JSON** body if we need to provide you some
+    information.
+
+
+    Successfull responses: **200** (with json), **204** (empty body).  
+
+    Error responses: **4xx** (with JSON, please read the "message" json key).
+
+
+    You can see examples of correct requests (with successful responses) and bad
+    requests (with error responses) under each endpoint's demo.
+
+
+    ## Variables in URLs
+
+
+    An example variable in url can be (your domain name) or (your server
+    hostname), variables will tel us the context and they will setup the
+    environment.
+
+
+    ## Units
+
+
+    As we provide hosting for your domains and offer managed VDSes/VPSes, too,
+    we need to handle with various units for storage and operational memories.
+    As hosting tariffs for domains are usually used for smaller projects, it
+    works with smaller units (like kB and MB) as stored data isn't too big. On
+    the other side, managed servers often works with bigger data in GB and TB.
+    To deal with this asymmetry we decided to use two unit systems in this API.
+
+
+    ### Domains (and related services)
+
+
+    Everything around domains (includes all related services like databases, FTP
+    or emails) uses **Megabytes (MB)** in endpoints of this API.
+
+
+    When we need to count with bigger numbers, we always divide by **1,000**, so
+    e.g. **1 GB = 1,000 MB**.
+
+
+    ### Servers (VPS, VDS)
+
+
+    When dealing with storage units and limitations around servers (VPSes and
+    VDSes), always use **Gigabytes (GB)** for disk spaces and **Gibibytes
+    (GiB)** for RAM size.
+
+
+    When we need to save higher unit, for instance TB, we will divide bytes by
+    1,000 for storage (server drives, etc.) and by 1,024 for RAM.
+
+
+    ## Authorization
+
+
+    Every your request needs to be authorized, authorization is done via **API
+    keys**, they can be created here
+    [https://portal.vas-hosting.cz/api-key](https://portal.vas-hosting.cz/api-key)
+    and scope is currently unlimited, they will be displayed only once, since we
+    are encrypting them and **we cannot show them again**, so please save them
+    to some secure place.
+
+
+    Authorizatin is done with http headers, header name is **X-API-Key** and the
+    value is your api key.
+  version: 1.0.0
+servers:
+  - url: undefined://{{url}}
+components:
+  securitySchemes:
+    apikeyAuth:
+      type: http
+      scheme: apikey
+security:
+  - apikeyAuth: []
+tags:
+  - name: Account
+  - name: Domains
+    description: >-
+      ## Units
+
+
+      As we noted at the top of this API documentation, all units (maily around
+      storage and its limitations) for domains and related services (everything
+      in this section) are in **Megabytes (MB)**. As we count with jumping over
+      content of this document, this information is repeated in all subsections.
+  - name: Domains > Databases
+    description: >-
+      ## Units
+
+
+      All API endpoints for databases uses **Megabytes (MB)** as storage size
+      units.
+  - name: Domains > DNS records
+    description: >-
+      This API endpoint is for creating, updating and deleting your DNS records.
+      You can also access your NS records and change/delete them.
+  - name: Domains > Email accounts
+    description: >-
+      When working with email accounts, always use only account name that is
+      before **@yourdomain.com**, because domain name is always specified in the
+      URL, if you are manipulating with email
+      [test@yourdomain.com](https://mailto:test@yourdomain.com), url for
+      changing password will look like this:
+
+
+      ```
+
+      https://centrum.vas-hosting.cz/api/v1/domains/yourdomain.com/email-accounts/test/change-password
+
+       ```
+
+      ## Units
+
+
+      All API endpoints for emails uses **Megabytes (MB)** as storage size
+      units.
+  - name: Domains > Ftp accounts
+    description: >-
+      ## Units
+
+
+      All API endpoints around FTP uses **Megabytes (MB)** as storage size
+      units.
+  - name: Servers
+    description: >-
+      ## Units
+
+
+      Every numbers for defining storage sizes are in **Gigabytes (GB)**, RAM
+      sizes are in **Gibibytes (GiB)**.
+  - name: Servers > Labels
+  - name: Servers > Operating systems
+  - name: Servers > IP addresses
+paths:
+  /api/v1/account/unpaid-invoices:
+    get:
+      tags:
+        - Account
+      summary: List unpaid invoices
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/account/unpaid-invoices/{variableSymbol}/pay-with-credit:
+    post:
+      tags:
+        - Account
+      summary: Pay unpaid invoice
+      requestBody:
+        content: {}
+      parameters:
+        - name: variableSymbol
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/domains/{domain}/databases:
+    get:
+      tags:
+        - Domains > Databases
+      summary: List databases
+      parameters:
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - Domains > Databases
+      summary: Create database
+      description: |-
+        | **JSON Parameter** | **Required** | **Description** |
+        | --- | --- | --- |
+        | name (string) | yes | Database name |
+        | type (mysql/postgresql) | yes | Database software |
+        | password (string 8-64) | yes | User password |
+        | encoding (string) | no | MySQL/PostgreSQL encoding |
+        | note (string) | no | Note |
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                name: foobar_5579
+                type: mysql
+                password: mytopsecretpassword
+                encoding: utf8mb4_unicode_ci
+                note: null
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/domains/{domain}/databases/{database}/change-password:
+    post:
+      tags:
+        - Domains > Databases
+      summary: Change password
+      description: |-
+        | **JSON Parameter** | **Required** | **Description** |
+        | --- | --- | --- |
+        | password (string 8-64) | yes | New password |
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                password: mynewpassword
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+        - name: database
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/domains/{domain}/databases/{database}/backup:
+    post:
+      tags:
+        - Domains > Databases
+      summary: Backup database
+      requestBody:
+        content: {}
+      parameters:
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+        - name: database
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/domains/{domain}/databases/{database}:
+    delete:
+      tags:
+        - Domains > Databases
+      summary: Delete database
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+        - name: database
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/domains/{domain}/dns-records:
+    get:
+      tags:
+        - Domains > DNS records
+      summary: List DNS records
+      parameters:
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - Domains > DNS records
+      summary: Create DNS record
+      description: |-
+        | **JSON Parameter** | **Required** | **Description** |
+        | --- | --- | --- |
+        | name (string) | yes | Record name |
+        | content (string) | yes | Record content/value |
+        | type (string) | yes | Type (A/MX/TXT etc.) |
+        | ttl (int 60-86400) | yes | Time to live |
+        | priority (int 0-65535) | no | Priority for MX records |
+        | note (string) | no | Your internal note |
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                name: test
+                content: 9.8.7.6
+                type: A
+                ttl: 1800
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/domains/{domain}/dns-records/{dnsRecordId}:
+    post:
+      tags:
+        - Domains > DNS records
+      summary: Edit DNS record
+      description: |-
+        | **JSON Parameter** | **Required** | **Description** |
+        | --- | --- | --- |
+        | name (string) | yes | Record name |
+        | content (string) | yes | Record content/value |
+        | type (string) | yes | Type (A/MX/TXT etc.) |
+        | ttl (int 60-86400) | yes | Time to live |
+        | priority (int 0-65535) | no | Priority for MX records |
+        | note (string) | no | Your internal note |
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                name: test
+                content: 1.1.1.1
+                type: A
+                ttl: 1800
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+        - name: dnsRecordId
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - Domains > DNS records
+      summary: Delete DNS record
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+        - name: dnsRecordId
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/domains/{domain}/email-accounts:
+    get:
+      tags:
+        - Domains > Email accounts
+      summary: List email accounts
+      parameters:
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - Domains > Email accounts
+      summary: Create an email account
+      description: |-
+        | **JSON Parameter** | **Required** | **Description** |
+        | --- | --- | --- |
+        | name (string) | yes | Account name |
+        | displayName (string) | yes | Display name |
+        | password (string 8-64) | yes | Account password |
+        | quota (int, MB) | yes | Quota (0 for unlimited) |
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                name: foobar
+                displayName: Karel Dytrych
+                password: mytopsecretpassword
+                quota: 200
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/domains/{domain}/email-accounts/{email}/change-password:
+    post:
+      tags:
+        - Domains > Email accounts
+      summary: Change password
+      description: |-
+        | **JSON Parameter** | **Required** | **Description** |
+        | --- | --- | --- |
+        | password (string 8-64) | yes | New password |
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                password: mynewpassword
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+        - name: email
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/domains/{domain}/email-accounts/{email}/change-quota:
+    post:
+      tags:
+        - Domains > Email accounts
+      summary: Change quota
+      description: |-
+        | **JSON Parameter** | **Required** | **Description** |
+        | --- | --- | --- |
+        | quota (int, MB) | yes | New quota |
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                quota: 2000
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+        - name: email
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/domains/{domain}/email-accounts/{email}/alias:
+    post:
+      tags:
+        - Domains > Email accounts
+      summary: Create email alias
+      description: |-
+        | **JSON Parameter** | **Required** | **Description** |
+        | --- | --- | --- |
+        | name (string) | yes | Email alias name |
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                name: testing
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+        - name: email
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/domains/{domain}/email-accounts/{email}/alias/testing:
+    delete:
+      tags:
+        - Domains > Email accounts
+      summary: Delete email alias
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+        - name: email
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/domains/{domain}/email-accounts/{email}/setup-auto-reply:
+    post:
+      tags:
+        - Domains > Email accounts
+      summary: Setup auto-reply
+      description: |-
+        | **JSON Parameter** | **Required** | **Description** |
+        | --- | --- | --- |
+        | isActive (boolean) | yes | Status |
+        | autoActiveFrom (string, datetime) | no | Auto. active from |
+        | autoActiveTo (string, datetime) | no | Auto. active to |
+        | subject (string) | no | Email title |
+        | content (string) | no | Email body |
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                isActive: true
+                autoActiveFrom: '2023-01-01 00:00:00'
+                autoActiveTo: '2023-02-02 00:00:00'
+                subject: This is auto-reply subject
+                content: This is the body of the email
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+        - name: email
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/domains/{domain}/email-accounts/{email}/setup-forwarding:
+    post:
+      tags:
+        - Domains > Email accounts
+      summary: Setup forwarding
+      description: |-
+        | **JSON Parameter** | **Required** | **Description** |
+        | --- | --- | --- |
+        | emails (array of strings) | yes | Emails to forward to |
+        | deleteOriginalEmail (boolean) | yes | Delete original email? |
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                emails:
+                  - example@gmail.com
+                  - another@proton.me
+                deleteOriginalEmail: false
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+        - name: email
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/domains/{domain}/email-accounts/{email}:
+    delete:
+      tags:
+        - Domains > Email accounts
+      summary: Delete email account
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+        - name: email
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/domains/{domain}/ftp-accounts:
+    get:
+      tags:
+        - Domains > Ftp accounts
+      summary: List FTP accounts
+      parameters:
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - Domains > Ftp accounts
+      summary: Create FTP account
+      description: |-
+        StartFragment
+
+        | **JSON Parameter** | **Required** | **Description** |
+        | --- | --- | --- |
+        | name (string) | yes | Account name |
+        | directory (string) | yes | Directory path |
+        | password (string 8-64) | yes | Account password |
+        | quota (int, MB) | yes | Quota (0 for unlimited) |
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                name: foobar.5579
+                directory: /adminer
+                password: mytopsecretpassword
+                quota: 2000000000
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/domains/{domain}/ftp-accounts/{ftp}/change-password:
+    post:
+      tags:
+        - Domains > Ftp accounts
+      summary: Change FTP password
+      description: |-
+        | **JSON Parameter** | **Required** | **Description** |
+        | --- | --- | --- |
+        | password (string 8-64) | yes | Account password |
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                password: mynewpassword
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+        - name: ftp
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/domains/{domain}/ftp-accounts/{ftp}/change-quota:
+    post:
+      tags:
+        - Domains > Ftp accounts
+      summary: Change FTP quota
+      description: |-
+        | **JSON Parameter** | **Required** | **Description** |
+        | --- | --- | --- |
+        | quota (int, MB) | yes | Quota (0 for unlimited) |
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                quota: 3000
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+        - name: ftp
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/domains/{domain}/ftp-accounts/{ftp}/lock:
+    post:
+      tags:
+        - Domains > Ftp accounts
+      summary: Lock FTP account
+      requestBody:
+        content: {}
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+        - name: ftp
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/domains/{domain}/ftp-accounts/{ftp}/unlock:
+    post:
+      tags:
+        - Domains > Ftp accounts
+      summary: Unlock FTP account
+      requestBody:
+        content: {}
+      parameters:
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+        - name: ftp
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/domains/{domain}/ftp-accounts/{ftp}:
+    delete:
+      tags:
+        - Domains > Ftp accounts
+      summary: Delete FTP account
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+        - name: ftp
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/domains/{domain}:
+    get:
+      tags:
+        - Domains
+      summary: Get domain info
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/domains/{domain}/change-php-version:
+    post:
+      tags:
+        - Domains
+      summary: Change PHP version
+      description: |-
+        | **JSON Parameter** | **Required** | **Description** |
+        | --- | --- | --- |
+        | version (string) | yes | PHP version |
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                version: '8.2'
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: domain
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/servers/labels:
+    get:
+      tags:
+        - Servers > Labels
+      summary: Get list of server labels
+      description: >-
+        Returns all created labels and their colors. These labels could be
+        assigned to your servers for better identification, grouping or
+        filtering. [Filtering
+        servers](https://documenter.getpostman.com/view/26076792/2s93CRJque#6b537ccb-f16f-416a-92b3-17ea3c869e0e)
+        by their labels is supported directly through our API.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - Servers > Labels
+      summary: Create server label
+      description: >-
+        Creates new server label.
+
+
+        Name of the label (key `name`) can't contain any whitespace characters.
+        It's restricted due to some limitations of working with labels in GUI.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                name: <label-name>
+                color: <color-in-hex-form>
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/servers/labels/{labelName}:
+    delete:
+      tags:
+        - Servers > Labels
+      summary: Delete server label
+      description: >-
+        Deletes an existing server label. If the label has been assigned to some
+        servers, it is **automatically unassigned** before deletion. So, be
+        careful which label you delete.
+      parameters:
+        - name: labelName
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - Servers > Labels
+      summary: Edit server label
+      description: >-
+        Modifies server label.
+
+
+        Name of the label (key `name`) can't contain any whitespace characters.
+        It's restricted due to some limitations of working with labels in GUI.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                name: <new-label-name>
+                color: <new-color-in-hex-form>
+      parameters:
+        - name: labelName
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/servers/operating-systems:
+    get:
+      tags:
+        - Servers > Operating systems
+      summary: Get list of supported operating systems
+      description: >-
+        Returns list of OSes we can automatically install for you. These
+        operating systems could be used in API requests for server
+        installations). If you need some special OS, you need to contact us for
+        manual intervention.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/servers/ip-addresses:
+    get:
+      tags:
+        - Servers > IP addresses
+      summary: Get list of assigned IP addresses
+      description: Returns your assigned IP addresses that can be used for server installs.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/servers:
+    get:
+      tags:
+        - Servers
+      summary: Get list of servers
+      description: >-
+        Returns all active servers in customer's account.
+
+
+        ## Filtering
+
+
+        This endpoint supports an optional **filtering**.
+
+
+        ### By label name
+
+
+        You can filter servers by labels that were assigned to them before. This
+        could be done using optional query parameter `labels[]`, which takes an
+        array of label names. You can support one or many labels this way, but
+        it always has to be specified like an array query parameter.
+
+
+        **Correct usage:**
+
+
+        - `labels[]=my-label` – Selects servers with label "my-label".
+
+        - `labels[]=first&labels[]=second` – Selects servers with both "first"
+        and "second" labels.
+            
+
+        **Wrong usage:**
+
+
+        - ~`label=my-label`~ – The correct name of the query parameter is
+        `labels[]`, even for single label.
+
+        - ~`labels=my-label`~ – You need to provide query parameter as array
+        always, even for single label.
+
+        - ~`labels[]=first,second`~ – When specifying two labels, you need to
+        insert `labels[]` query parameter twice. This example would select
+        filters with label named "first,second".
+      parameters:
+        - name: labels[]
+          in: query
+          schema:
+            type: string
+          description: Optional query parameters for filtering by label name
+          example: label-name
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/servers/{serverHostname}:
+    get:
+      tags:
+        - Servers
+      summary: Get server info
+      parameters:
+        - name: serverHostname
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/servers/{serverHostname}/reboot:
+    post:
+      tags:
+        - Servers
+      summary: Reboot server
+      requestBody:
+        content: {}
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: serverHostname
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/servers/vds:
+    get:
+      tags:
+        - Servers
+      summary: Get list of VDS
+      description: Returns all VDS available for authenticated customer.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/servers/{serverHostname}/install-vps:
+    post:
+      tags:
+        - Servers
+      summary: Install VPS on VDS
+      description: >-
+        Allows to install VPS (Virtual Private Server) on VDS (Virtual Dedicated
+        Server). Dedicated servers could be partitioned to more virtual servers,
+        when there is enough capacity of CPU, RAM, storage and the partitioning
+        is allowed (you need to contact us, if you need to use this feature).
+
+
+        **Used units (and value restrictions):**
+
+
+        - `cpu` — GHz (greater than 3)
+
+        - `ram` — GiB (greater than or equal to 2)
+
+        - `primaryStorageSize` — GB
+
+        - `primaryStorageLocation` — number of VDS's disk slot (see
+        [https://documenter.getpostman.com/view/26076792/2s93CRJque#b5d554ff-1355-4ef0-bd71-2c8bb07ae465](https://documenter.getpostman.com/view/26076792/2s93CRJque#b5d554ff-1355-4ef0-bd71-2c8bb07ae465))
+
+        - `operatingSystem` — OS identifier (see
+        [https://documenter.getpostman.com/view/26076792/2s93CRJque#493137a1-9d6f-44b9-8209-911897af75d2](https://documenter.getpostman.com/view/26076792/2s93CRJque#493137a1-9d6f-44b9-8209-911897af75d2))
+
+        - `ipAddress` — Ip address (optional, see
+        [https://documenter.getpostman.com/view/26076792/2s93CRJque#da892cd7-e364-439d-9080-765f0cd1082c](https://documenter.getpostman.com/view/26076792/2s93CRJque#da892cd7-e364-439d-9080-765f0cd1082c))
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                cpu: 3000
+                ram: 4
+                primaryStorageSize: 10
+                primaryStorageLocation: 1
+                operatingSystem: vpsc
+                serverName: Test server
+      parameters:
+        - name: serverHostname
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/servers/{serverHostname}/assign-label:
+    post:
+      tags:
+        - Servers
+      summary: Assign label to server
+      description: Assigns prepared label to some server.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                label: <label-name>
+      parameters:
+        - name: serverHostname
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/servers/{serverHostname}/unassign-label:
+    post:
+      tags:
+        - Servers
+      summary: Unassign label from server
+      description: Unassigns previously assigned label from server.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                name: <label-name>
+      parameters:
+        - name: serverHostname
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}

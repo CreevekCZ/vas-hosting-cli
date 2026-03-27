@@ -39,6 +39,9 @@ jobs:
       - name: Build release binary
         run: swift build -c release
 
+      - name: Strip binary
+        run: strip .build/release/vash
+
       - name: Create archive
         run: |
           VERSION=${GITHUB_REF_NAME#v}

@@ -1,0 +1,142 @@
+# vash — CLI for vas-hosting.cz
+
+`vash` is a command-line tool for managing vas-hosting.cz hosting services: domains, databases, DNS, email, FTP, and servers.
+
+## Installation
+
+```sh
+brew tap CreevekCZ/tap
+brew install vash
+```
+
+## Authentication
+
+Every API command requires an active account. API keys are obtained from https://portal.vas-hosting.cz/api-key
+
+```sh
+vash auth login --name personal --api-key <key>   # add account
+vash auth list                                     # list accounts
+vash auth switch <name>                            # switch active account
+vash auth current                                  # show active account
+vash auth logout <name>                            # remove account
+```
+
+Multiple accounts are supported. Override per-command with `--account <name>`.
+
+## Output formats
+
+All API commands accept `--format table` (default, human-readable) or `--format json` (machine-readable).
+
+```sh
+vash server list --format json
+```
+
+JSON errors are written to stderr as `{"error":"<message>","code":"<code>"}`.
+Error codes: `unauthorized`, `not_found`, `api_error`, `unexpected_status`.
+
+## Commands
+
+### account
+
+```sh
+vash account invoices                                           # list unpaid invoices
+vash account pay-invoice <variableSymbol>                       # pay invoice with credit
+```
+
+### domain
+
+```sh
+vash domain info <domain>                                       # show domain details
+vash domain change-php <domain> --version <version>            # change PHP version
+```
+
+### database
+
+```sh
+vash database list <domain>
+vash database create <domain> --name <name> --type <mysql|postgresql> --password <pass> [--encoding <enc>] [--note <note>]
+vash database change-password <domain> <database> --password <pass>
+vash database backup <domain> <database>
+vash database delete <domain> <database>
+```
+
+### dns
+
+```sh
+vash dns list <domain>
+vash dns create <domain> --name <name> --type <A|AAAA|CNAME|MX|TXT|NS|SRV|CAA> --content <value> --ttl <seconds> [--priority <n>] [--note <note>]
+vash dns edit <domain> <recordId> --name <name> --type <type> --content <value> --ttl <seconds> [--priority <n>]
+vash dns delete <domain> <recordId>
+```
+
+### email
+
+```sh
+vash email list <domain>
+vash email create <domain> --name <name> --display-name <name> --password <pass> [--quota <mb>]
+vash email change-password <domain> <email> --password <pass>
+vash email change-quota <domain> <email> --quota <mb>
+vash email create-alias <domain> <email> --alias <alias>
+vash email delete-alias <domain> <email> --alias <alias>
+vash email auto-reply <domain> <email> --enabled <true|false> [--subject <s>] [--message <m>]
+vash email forwarding <domain> <email> --forward-to <address>
+vash email delete <domain> <email>
+```
+
+### ftp
+
+```sh
+vash ftp list <domain>
+vash ftp create <domain> --name <name> --directory <dir> --password <pass> [--quota <mb>]
+vash ftp change-password <domain> <ftp> --password <pass>
+vash ftp change-quota <domain> <ftp> --quota <mb>
+vash ftp lock <domain> <ftp>
+vash ftp unlock <domain> <ftp>
+vash ftp delete <domain> <ftp>
+```
+
+### server
+
+```sh
+vash server list [--labels <label1,label2>]
+vash server info <hostname>
+vash server reboot <hostname>
+vash server list-vds
+vash server install-vps <hostname> --cpu <mhz> --ram <gib> --storage-size <gb> --storage-location <slot> --os <id> [--server-name <name>] [--ip-address <ip>]
+vash server assign-label <hostname> --label <label>
+vash server unassign-label <hostname> --label <label>
+```
+
+### server-label
+
+```sh
+vash server-label list
+vash server-label create --name <name> [--color <hex>]
+vash server-label edit <name> --new-name <name> [--color <hex>]
+vash server-label delete <name>
+```
+
+### infrastructure
+
+```sh
+vash infrastructure list-os      # list available OS images (use ID with server install-vps --os)
+vash infrastructure list-ips     # list available IP addresses
+```
+
+## Common workflows
+
+```sh
+# Provision a new VPS
+vash infrastructure list-os --format json
+vash infrastructure list-ips --format json
+vash server install-vps vds1.example.com --cpu 3200 --ram 4 --storage-size 80 --storage-location 1 --os ubuntu-22.04
+
+# Add a DNS record
+vash dns create example.com --name @ --type A --content 1.2.3.4 --ttl 3600
+
+# Create a database
+vash database create example.com --name myapp --type mysql --password s3cr3t
+
+# Create an email account
+vash email create example.com --name info --display-name "Info" --password s3cr3t --quota 2048
+```

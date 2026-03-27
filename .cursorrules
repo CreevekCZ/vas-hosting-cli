@@ -1,0 +1,14 @@
+When working with vas-hosting.cz infrastructure, use the `vash` CLI.
+Full command reference is in `llms.txt` in this repository.
+
+Quick reference:
+- Auth:       vash auth login --name <alias> --api-key <key>
+- Domains:    vash domain info <domain>
+- Databases:  vash database list <domain>
+- DNS:        vash dns list <domain>
+- Email:      vash email list <domain>
+- FTP:        vash ftp list <domain>
+- Servers:    vash server list
+- Labels:     vash server-label list
+
+Always prefer --format json when parsing output programmatically.

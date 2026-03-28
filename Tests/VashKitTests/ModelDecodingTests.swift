@@ -168,6 +168,35 @@ final class ModelDecodingTests: XCTestCase {
         XCTAssertEqual(response.additionalProperties["ftpuser"]?.isActive, true)
     }
 
+    func testDomainInfoDecodesWithoutName() throws {
+        let json = """
+        {
+            "id": 123,
+            "expiration": "2026-12-31",
+            "tariff": "basic"
+        }
+        """.data(using: .utf8)!
+
+        let info = try decoder.decode(Components.Schemas.DomainInfo.self, from: json)
+        XCTAssertEqual(info.id, 123)
+        XCTAssertNil(info.name)
+        XCTAssertEqual(info.expiration, "2026-12-31")
+    }
+
+    func testFtpAccountDecodesWithoutIsActive() throws {
+        let json = """
+        {
+            "ftpuser": {
+                "quota": 500
+            }
+        }
+        """.data(using: .utf8)!
+
+        let response = try decoder.decode(Components.Schemas.FtpAccountsResponse.self, from: json)
+        XCTAssertEqual(response.additionalProperties["ftpuser"]?.quota, 500)
+        XCTAssertNil(response.additionalProperties["ftpuser"]?.isActive)
+    }
+
     func testVdsDecoding() throws {
         let json = """
         {

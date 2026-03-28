@@ -93,7 +93,6 @@ components:
           $ref: '#/components/schemas/VpsCount'
       required:
         - id
-        - name
 
     # --- Database ---
     Database:
@@ -296,7 +295,6 @@ components:
           type: boolean
       required:
         - quota
-        - isActive
     FtpAccountsResponse:
       type: object
       additionalProperties:

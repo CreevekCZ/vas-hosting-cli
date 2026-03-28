@@ -26,7 +26,7 @@ public struct FTPListCommand: AsyncParsableCommand {
                 let rows = body.additionalProperties
                     .map { name, acct in
                         [name, acct.quota == 0 ? "Unlimited" : "\(acct.quota) MB",
-                         acct.isActive ? "Active" : "Locked",
+                         acct.isActive ?? true ? "Active" : "Locked",
                         ]
                     }
                     .sorted { $0[0] < $1[0] }

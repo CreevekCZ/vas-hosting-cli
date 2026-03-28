@@ -25,7 +25,7 @@ public struct DomainInfoCommand: AsyncParsableCommand {
             case .table:
                 var rows: [[String]] = [
                     ["ID", "\(info.id)"],
-                    ["Name", info.name],
+                    ["Name", info.name ?? domain],
                 ]
                 if let exp = info.expiration { rows.append(["Expiration", exp]) }
                 if let tariff = info.tariff { rows.append(["Tariff", tariff]) }

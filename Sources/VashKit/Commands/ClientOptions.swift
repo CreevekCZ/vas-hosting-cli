@@ -19,7 +19,7 @@ public struct ClientOptions: ParsableArguments {
         return Client(
             serverURL: try Servers.Server1.url(),
             transport: URLSessionTransport(),
-            middlewares: [AuthMiddleware(apiKey: apiKey)]
+            middlewares: [AuthMiddleware(apiKey: apiKey), EmptyArrayRewriteMiddleware()]
         )
     }
 }

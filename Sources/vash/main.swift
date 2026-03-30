@@ -13,10 +13,10 @@ Task {
             try command.run()
         }
     } catch {
-        // For --help, --version, and completion requests ArgumentParser uses a clean exit code.
-        // Delegate those back to ArgumentParser so it can print the correct output.
+        // For --help, --version, completion requests, and validation failures, delegate to
+        // ArgumentParser so it can print the formatted message with usage info.
         let exitCode = VashCommand.exitCode(for: error)
-        if exitCode == .success {
+        if exitCode == .success || exitCode == .validationFailure {
             VashCommand.exit(withError: error)
         }
 

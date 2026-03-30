@@ -21,6 +21,12 @@ public struct DatabaseChangePasswordCommand: AsyncParsableCommand {
 
     public init() {}
 
+    public func validate() throws {
+        guard password.count >= 8, password.count <= 64 else {
+            throw ValidationError("Password must be 8-64 characters.")
+        }
+    }
+
     public func run() async throws {
         let client = try clientOptions.makeClient()
         let response = try await client.changeDatabasePassword(

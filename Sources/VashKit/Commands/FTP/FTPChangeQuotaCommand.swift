@@ -21,6 +21,12 @@ public struct FTPChangeQuotaCommand: AsyncParsableCommand {
 
     public init() {}
 
+    public func validate() throws {
+        guard quota >= 0 else {
+            throw ValidationError("Quota must be 0 (unlimited) or greater.")
+        }
+    }
+
     public func run() async throws {
         let client = try clientOptions.makeClient()
         let response = try await client.changeFtpQuota(

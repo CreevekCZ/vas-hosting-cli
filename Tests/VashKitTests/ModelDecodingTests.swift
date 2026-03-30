@@ -158,14 +158,16 @@ final class ModelDecodingTests: XCTestCase {
         {
             "ftpuser": {
                 "quota": 1000,
-                "isActive": true
+                "isLocked": false,
+                "directory": "/www"
             }
         }
         """.data(using: .utf8)!
 
         let response = try decoder.decode(Components.Schemas.FtpAccountsResponse.self, from: json)
         XCTAssertEqual(response.additionalProperties["ftpuser"]?.quota, 1000)
-        XCTAssertEqual(response.additionalProperties["ftpuser"]?.isActive, true)
+        XCTAssertEqual(response.additionalProperties["ftpuser"]?.isLocked, false)
+        XCTAssertEqual(response.additionalProperties["ftpuser"]?.directory, "/www")
     }
 
     func testDomainInfoDecodesWithoutName() throws {
@@ -183,7 +185,7 @@ final class ModelDecodingTests: XCTestCase {
         XCTAssertEqual(info.expiration, "2026-12-31")
     }
 
-    func testFtpAccountDecodesWithoutIsActive() throws {
+    func testFtpAccountDecodesWithoutOptionalFields() throws {
         let json = """
         {
             "ftpuser": {
@@ -194,7 +196,8 @@ final class ModelDecodingTests: XCTestCase {
 
         let response = try decoder.decode(Components.Schemas.FtpAccountsResponse.self, from: json)
         XCTAssertEqual(response.additionalProperties["ftpuser"]?.quota, 500)
-        XCTAssertNil(response.additionalProperties["ftpuser"]?.isActive)
+        XCTAssertNil(response.additionalProperties["ftpuser"]?.isLocked)
+        XCTAssertNil(response.additionalProperties["ftpuser"]?.directory)
     }
 
     func testVdsDecoding() throws {

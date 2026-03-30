@@ -27,6 +27,18 @@ public struct FTPCreateCommand: AsyncParsableCommand {
 
     public init() {}
 
+    public func validate() throws {
+        guard name.range(of: "^[a-zA-Z0-9.]{2,25}$", options: .regularExpression) != nil else {
+            throw ValidationError("FTP account name must be 2-25 characters (letters, digits, dots only).")
+        }
+        guard password.count >= 8, password.count <= 64 else {
+            throw ValidationError("Password must be 8-64 characters.")
+        }
+        guard quota >= 0 else {
+            throw ValidationError("Quota must be 0 (unlimited) or greater.")
+        }
+    }
+
     public func run() async throws {
         let client = try clientOptions.makeClient()
         let response = try await client.createFtpAccount(
@@ -36,6 +48,8 @@ public struct FTPCreateCommand: AsyncParsableCommand {
         switch response {
         case .noContent:
             OutputFormatter.printSuccess("FTP account '\(name)' created.", format: clientOptions.format)
+        case .badRequest(let err):
+            throw VashError.apiError((try? err.body.json.message) ?? "Bad request")
         case .conflict(let err):
             throw VashError.apiError((try? err.body.json.message) ?? "Account already exists")
         case .unprocessableContent(let err):

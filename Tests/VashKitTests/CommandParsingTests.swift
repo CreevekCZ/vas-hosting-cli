@@ -115,10 +115,10 @@ final class CommandParsingTests: XCTestCase {
     }
 
     func testDatabaseChangePasswordParsesArgs() throws {
-        let cmd = try DatabaseChangePasswordCommand.parse(["example.com", "mydb", "--password", "newpass"])
+        let cmd = try DatabaseChangePasswordCommand.parse(["example.com", "mydb", "--password", "newpass12"])
         XCTAssertEqual(cmd.domain, "example.com")
         XCTAssertEqual(cmd.database, "mydb")
-        XCTAssertEqual(cmd.password, "newpass")
+        XCTAssertEqual(cmd.password, "newpass12")
     }
 
     func testDatabaseBackupParsesArgs() throws {
@@ -285,21 +285,21 @@ final class CommandParsingTests: XCTestCase {
             "example.com",
             "--name", "ftpuser",
             "--directory", "/www",
-            "--password", "ftppass",
+            "--password", "ftppass12",
             "--quota", "1000",
         ])
         XCTAssertEqual(cmd.domain, "example.com")
         XCTAssertEqual(cmd.name, "ftpuser")
         XCTAssertEqual(cmd.directory, "/www")
-        XCTAssertEqual(cmd.password, "ftppass")
+        XCTAssertEqual(cmd.password, "ftppass12")
         XCTAssertEqual(cmd.quota, 1000)
     }
 
     func testFTPChangePasswordParsesArgs() throws {
-        let cmd = try FTPChangePasswordCommand.parse(["example.com", "ftpuser", "--password", "newpass"])
+        let cmd = try FTPChangePasswordCommand.parse(["example.com", "ftpuser", "--password", "newpass12"])
         XCTAssertEqual(cmd.domain, "example.com")
         XCTAssertEqual(cmd.ftp, "ftpuser")
-        XCTAssertEqual(cmd.password, "newpass")
+        XCTAssertEqual(cmd.password, "newpass12")
     }
 
     func testFTPChangeQuotaParsesArgs() throws {
@@ -325,6 +325,84 @@ final class CommandParsingTests: XCTestCase {
         let cmd = try FTPDeleteCommand.parse(["example.com", "ftpuser"])
         XCTAssertEqual(cmd.domain, "example.com")
         XCTAssertEqual(cmd.ftp, "ftpuser")
+    }
+
+    // MARK: - FTP Validation
+
+    func testFTPCreateRejectsShortName() {
+        XCTAssertThrowsError(try FTPCreateCommand.parse([
+            "example.com", "--name", "a", "--directory", "/www",
+            "--password", "password1", "--quota", "0",
+        ]))
+    }
+
+    func testFTPCreateRejectsLongName() {
+        XCTAssertThrowsError(try FTPCreateCommand.parse([
+            "example.com", "--name", "abcdefghijklmnopqrstuvwxyz", "--directory", "/www",
+            "--password", "password1", "--quota", "0",
+        ]))
+    }
+
+    func testFTPCreateRejectsInvalidChars() {
+        XCTAssertThrowsError(try FTPCreateCommand.parse([
+            "example.com", "--name", "ftp_user!", "--directory", "/www",
+            "--password", "password1", "--quota", "0",
+        ]))
+    }
+
+    func testFTPCreateAcceptsValidName() throws {
+        _ = try FTPCreateCommand.parse([
+            "example.com", "--name", "myuser", "--directory", "/www",
+            "--password", "password1", "--quota", "0",
+        ])
+    }
+
+    func testFTPCreateRejectsShortPassword() {
+        XCTAssertThrowsError(try FTPCreateCommand.parse([
+            "example.com", "--name", "myuser", "--directory", "/www",
+            "--password", "short", "--quota", "0",
+        ]))
+    }
+
+    func testFTPCreateRejectsLongPassword() {
+        XCTAssertThrowsError(try FTPCreateCommand.parse([
+            "example.com", "--name", "myuser", "--directory", "/www",
+            "--password", String(repeating: "a", count: 65), "--quota", "0",
+        ]))
+    }
+
+    func testFTPChangePasswordRejectsShortPassword() {
+        XCTAssertThrowsError(try FTPChangePasswordCommand.parse(["example.com", "myuser", "--password", "short"]))
+    }
+
+    func testFTPChangePasswordAcceptsValidPassword() throws {
+        _ = try FTPChangePasswordCommand.parse(["example.com", "myuser", "--password", "password1"])
+    }
+
+    func testFTPChangeQuotaAcceptsZero() throws {
+        _ = try FTPChangeQuotaCommand.parse(["example.com", "myuser", "--quota", "0"])
+    }
+
+    // MARK: - Database Validation
+
+    func testDatabaseCreateRejectsShortPassword() {
+        XCTAssertThrowsError(try DatabaseCreateCommand.parse([
+            "example.com", "--name", "mydb", "--type", "mysql", "--password", "short",
+        ]))
+    }
+
+    func testDatabaseCreateAcceptsValidPassword() throws {
+        _ = try DatabaseCreateCommand.parse([
+            "example.com", "--name", "mydb", "--type", "mysql", "--password", "password1",
+        ])
+    }
+
+    func testDatabaseChangePasswordRejectsShortPassword() {
+        XCTAssertThrowsError(try DatabaseChangePasswordCommand.parse(["example.com", "mydb", "--password", "short"]))
+    }
+
+    func testDatabaseChangePasswordAcceptsValidPassword() throws {
+        _ = try DatabaseChangePasswordCommand.parse(["example.com", "mydb", "--password", "password1"])
     }
 
     // MARK: - Server

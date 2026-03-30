@@ -25,12 +25,13 @@ public struct FTPListCommand: AsyncParsableCommand {
             case .table:
                 let rows = body.additionalProperties
                     .map { name, acct in
-                        [name, acct.quota == 0 ? "Unlimited" : "\(acct.quota) MB",
-                         acct.isActive ?? true ? "Active" : "Locked",
+                        [name, acct.directory ?? "/",
+                         acct.quota == 0 ? "Unlimited" : "\(acct.quota) MB",
+                         acct.isLocked ?? false ? "Locked" : "Active",
                         ]
                     }
                     .sorted { $0[0] < $1[0] }
-                OutputFormatter.printTable(headers: ["NAME", "QUOTA", "STATUS"], rows: rows)
+                OutputFormatter.printTable(headers: ["NAME", "DIRECTORY", "QUOTA", "STATUS"], rows: rows)
             case .json:
                 OutputFormatter.printJSON(body)
             }
